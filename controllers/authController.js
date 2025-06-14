@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
 
 const generateOtp = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return Math.floor(10000 + Math.random() * 90000).toString();
 };
 
 const sendOtp = async (userId, email) => {
@@ -16,6 +16,7 @@ const sendOtp = async (userId, email) => {
     user: userId,
     otp,
     expiresAt: otpExpiresAt,
+    type: 'email_verification',
   });
 
   await otpEntry.save();
@@ -30,17 +31,14 @@ const sendOtp = async (userId, email) => {
 };
 
 const verifyEmailVerificationOtp = async (req, res) => {
-  const { email, otp } = req.body;
+  const { userId, otp } = req.body;
 
-  // Find the user by email
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(400).json({ message: 'User not found' });
+  if(!userId || !otp) {
+    return res.status(400).json({ message: 'User ID and OTP are required.' });
   }
 
-  // Find the OTP entry linked to this user
   const otpEntry = await OTP.findOne({
-    user: user._id,
+    user: userId,
     otp,
     type: 'email_verification',
   });
@@ -49,17 +47,13 @@ const verifyEmailVerificationOtp = async (req, res) => {
     return res.status(400).json({ message: 'Invalid OTP' });
   }
 
-  // Check if OTP has expired
   if (otpEntry.expiresAt < Date.now()) {
     return res.status(400).json({ message: 'OTP has expired' });
   }
 
-  // Mark the user as verified (if needed)
-  user.isVerified = true;
-  await user.save();
+  await User.findByIdAndUpdate(userId, { isVerified: true });
 
-  // Delete the OTP from the database (optional)
-  await OTP.deleteOne({ _id: otpEntry._id });
+  await OTP.deleteMany({ user: userId, type: 'email_verification' });
 
   res.status(200).json({ message: 'OTP verified successfully' });
 };
@@ -67,40 +61,47 @@ const verifyEmailVerificationOtp = async (req, res) => {
 const requestForgotPassword = async (req, res) => {
   const { email } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(400).json({ message: 'User not found' });
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    const otp = generateOtp();
+    const otpExpiresAt = Date.now() + 10 * 60 * 1000;
+
+    await OTP.create({
+      user: user._id,
+      otp,
+      type: 'forgot_password',
+      expiresAt: otpExpiresAt,
+    });
+
+    await sendEmail(
+      email,
+      'Reset Password OTP',
+      `Your OTP for resetting your password is: ${otp}`
+    );
+
+    res.status(200).json({ 
+      message: 'OTP sent for password reset', 
+      user: {
+        _id: user._id,
+        email: email
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
   }
-
-  const otp = generateOtp();
-  const otpExpiresAt = Date.now() + 10 * 60 * 1000;
-
-  await OTP.create({
-    user: user._id,
-    otp,
-    type: 'forgot_password',
-    expiresAt: otpExpiresAt,
-  });
-
-  await sendEmail(
-    email,
-    'Reset Password OTP',
-    `Your OTP for resetting your password is: ${otp}`
-  );
-
-  res.status(200).json({ message: 'OTP sent for password reset' });
 };
 
 const verifyForgotPasswordOtp = async (req, res) => {
-  const { email, otp } = req.body;
-
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(400).json({ message: 'User not found' });
-  }
+  const { userId, otp } = req.body;
 
   const otpEntry = await OTP.findOne({
-    user: user._id,
+    user: userId,
     otp,
     type: 'forgot_password',
   });
@@ -114,14 +115,14 @@ const verifyForgotPasswordOtp = async (req, res) => {
   }
 
   const resetToken = jwt.sign(
-    { userId: user._id, type: 'password_reset' },
+    { userId: userId, type: 'password_reset' },
     process.env.JWT_SECRET,
     { expiresIn: '10m' }
   );
 
   await OTP.deleteOne({ _id: otpEntry._id });
 
-  res.status(200).json({ message: 'OTP verified, you may now reset your password' });
+  res.status(200).json({ message: 'OTP verified, you may now reset your password', resetToken });
 };
 
 const resetPassword = async (req, res) => {
@@ -177,7 +178,14 @@ const register = async (req, res) => {
 
     const otp = await sendOtp(newUser._id, email);
 
-    res.status(201).json({ message: 'User registered successfully' });
+    res.status(201).json({
+      message: 'User registered successfully',
+      user: {
+        _id: newUser._id,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
   } catch (err) {
     console.log(err)
     res.status(400).json({ message: 'Some error occured' });
@@ -192,6 +200,10 @@ const login = async (req, res) => {
 
     if (!user) {
       return res.status(400).json({ message: "Invalid Credentials" });
+    }
+
+    if (!user.isVerified) {
+      return res.status(403).json({ message: "Email not verified. Please verify your email before logging in." });
     }
 
     const isMatch = await bcrypt.compare(password, user.password)
@@ -216,11 +228,44 @@ const login = async (req, res) => {
   }
 }
 
-module.exports = { 
-  register, 
-  login, 
-  requestForgotPassword, 
-  verifyEmailVerificationOtp, 
+const resendEmailVerificationOtp = async (req, res) => {
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: 'User is already verified' });
+    }
+
+    // Delete any existing OTPs of this type
+    await OTP.deleteMany({ user: userId, type: 'email_verification' });
+
+    // Reuse your existing sendOtp function
+    await sendOtp(userId, user.email);
+
+    res.status(200).json({ message: 'OTP resent successfully' });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  requestForgotPassword,
+  verifyEmailVerificationOtp,
   verifyForgotPasswordOtp,
   resetPassword,
+  resendEmailVerificationOtp,
 };
