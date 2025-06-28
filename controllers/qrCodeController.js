@@ -28,6 +28,34 @@ const createQRCode = async (req, res) => {
   }
 };
 
+const updateQRCode = async (req, res) => {
+  try {
+    const qrCode = await QRCode.findById(req.params.id);
+    if (!qrCode) {
+      return res.status(404).json({ message: 'QR Code not found' });
+    }
+
+    // Only allow the owner to update
+    if (qrCode.userId.toString() !== req.user.userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const { content, color, expiresAt } = req.body;
+
+    if (content !== undefined) qrCode.content = content;
+    if (color !== undefined) qrCode.color = color;
+    if (expiresAt !== undefined)
+      qrCode.expiresAt = expiresAt ? new Date(expiresAt) : null;
+
+    await qrCode.save();
+
+    res.status(200).json({ message: "QR Code updated successfully", qrCode });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 const redirectToContent = async (req, res) => {
   try {
     const qrCode = await QRCode.findById(req.params.id);
@@ -178,6 +206,7 @@ const togglePauseQRCode = async (req, res) => {
 
 module.exports = {
   createQRCode,
+  updateQRCode,
   getUserQRCodes,
   getQRCodeById,
   deleteQRCode,

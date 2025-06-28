@@ -6,12 +6,14 @@ const {
   deleteQRCode,
   redirectToContent,
   getQRCodeById,
-  togglePauseQRCode
+  togglePauseQRCode,
+  updateQRCode
 } = require('../controllers/qrCodeController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 // Routes
 router.post('/create', authMiddleware, createQRCode);
+router.put('/:id', authMiddleware, updateQRCode);
 router.get('/user', authMiddleware, getUserQRCodes);
 router.get('/:id', authMiddleware, getQRCodeById)
 router.get('/redirect/:id', redirectToContent);
