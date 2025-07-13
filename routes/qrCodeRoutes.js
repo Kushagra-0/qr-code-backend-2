@@ -7,7 +7,9 @@ const {
   redirectToContent,
   getQRCodeById,
   togglePauseQRCode,
-  updateQRCode
+  updateQRCode,
+  getQRCodeAnalytics,
+  getQRCodeRealTimeAnalytics
 } = require('../controllers/qrCodeController');
 const authMiddleware = require('../middleware/authMiddleware');
 
@@ -16,9 +18,10 @@ router.post('/create', authMiddleware, createQRCode);
 router.put('/:id', authMiddleware, updateQRCode);
 router.get('/user', authMiddleware, getUserQRCodes);
 router.get('/:id', authMiddleware, getQRCodeById)
-router.get('/redirect/:id', redirectToContent);
+router.get('/redirect/:shortCode', redirectToContent);
 router.delete('/:id', authMiddleware, deleteQRCode);
 router.patch('/pause/:id', authMiddleware, togglePauseQRCode);
-router.get('/analytics/:id', authMiddleware, )
+router.get('/analytics/:id', authMiddleware, getQRCodeAnalytics);
+router.get('/realtimeAnalytics/:id', authMiddleware, getQRCodeRealTimeAnalytics);
 
 module.exports = router;
