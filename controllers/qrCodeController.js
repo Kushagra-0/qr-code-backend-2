@@ -420,6 +420,46 @@ const getQRCodeRealTimeAnalytics = async (req, res) => {
   }
 };
 
+const getUserScanAnalytics = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Get all QR codes of the user
+    const qrCodes = await QRCode.find({ userId }, '_id');
+    const qrCodeIds = qrCodes.map(qr => qr._id);
+
+    if (qrCodeIds.length === 0) {
+      return res.json({ scansOverTime: {} });
+    }
+
+    // Get all scans for those QR codes
+    const scans = await Scan.find({ qrCodeId: { $in: qrCodeIds } });
+
+    // Group scans by date (last 30 days)
+    const scansOverTime = {};
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      scansOverTime[dateStr] = 0;
+    }
+
+    scans.forEach(scan => {
+      const date = new Date(scan.scannedAt).toISOString().split('T')[0];
+      if (scansOverTime.hasOwnProperty(date)) {
+        scansOverTime[date]++;
+      }
+    });
+
+    res.json({ scansOverTime });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error fetching user scan analytics' });
+  }
+};
+
+
 module.exports = {
   createQRCode,
   updateQRCode,
@@ -430,4 +470,5 @@ module.exports = {
   togglePauseQRCode,
   getQRCodeAnalytics,
   getQRCodeRealTimeAnalytics,
+  getUserScanAnalytics,
 };
