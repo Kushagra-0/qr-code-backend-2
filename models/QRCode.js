@@ -15,10 +15,19 @@ const qrCodeSchema = new mongoose.Schema(
         name: {
             type: String,
         },
-        content: {
+
+        type: {
             type: String,
+            enum: ['URL', 'EMAIL', 'SMS', 'PHONE', 'YOUTUBE', 'WHATSAPP' , 'INSTAGRAM', 'FACEBOOK', 'TELEGRAM', 'LINKEDIN', 'TWITTER',  'YOUTUBE', 'LOCATION', 'UPI'],
             required: true,
         },
+
+        typeData: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {},
+        },
+
+        //styling
         backgroundColor: {
             type: String,
             default: '#ffffff',
@@ -50,6 +59,8 @@ const qrCodeSchema = new mongoose.Schema(
             type: String,
             default: '#000000',
         },
+
+        // Dynamic features
         isDynamic: {
             type: Boolean,
             default: false,
@@ -61,10 +72,6 @@ const qrCodeSchema = new mongoose.Schema(
         scanCount: {
             type: Number,
             default: 0,
-        },
-        expiresAt: {
-            type: Date,
-            default: null,
         },
     },
     {

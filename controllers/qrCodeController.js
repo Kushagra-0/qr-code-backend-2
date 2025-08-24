@@ -20,11 +20,11 @@ const generateUniqueShortCode = async () => {
 
 // Create a QR Code
 const createQRCode = async (req, res) => {
-  const { name, content, backgroundColor, dotType, dotColor, cornersSquareType, cornersSquareColor, cornersDotType, cornersDotColor, isDynamic, expiresAt } = req.body;
+  const { name, type, typeData, backgroundColor, dotType, dotColor, cornersSquareType, cornersSquareColor, cornersDotType, cornersDotColor, isDynamic } = req.body;
   const userId = req.user.userId;
 
-  if (!content) {
-    return res.status(400).json({ message: 'Type and content are required.' });
+  if (!type) {
+    return res.status(400).json({ message: 'QR code type is required.' });
   }
 
   try {
@@ -34,7 +34,8 @@ const createQRCode = async (req, res) => {
       userId,
       shortCode,
       name,
-      content,
+      type,
+      typeData,
       backgroundColor,
       dotType,
       dotColor,
@@ -43,7 +44,6 @@ const createQRCode = async (req, res) => {
       cornersDotType,
       cornersDotColor,
       isDynamic,
-      expiresAt: expiresAt ? new Date(expiresAt) : null
     });
     res.status(201).json({ message: 'QR Code created successfully.', qrCode });
   } catch (err) {
@@ -64,10 +64,10 @@ const updateQRCode = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    const { name, content, backgroundColor, dotType, dotColor, cornersSquareType, cornersSquareColor, cornersDotType, cornersDotColor, expiresAt } = req.body;
+    const { name, type, typeData, backgroundColor, dotType, dotColor, cornersSquareType, cornersSquareColor, cornersDotType, cornersDotColor, expiresAt } = req.body;
 
     if (name !== undefined) qrCode.name = name;
-    if (content !== undefined) qrCode.content = content;
+    if (typeData !== undefined) qrCode.typeData = typeData;
     if (backgroundColor !== undefined) qrCode.backgroundColor = backgroundColor;
     if (dotType !== undefined) qrCode.dotType = dotType;
     if (dotColor !== undefined) qrCode.dotColor = dotColor;
@@ -86,7 +86,7 @@ const updateQRCode = async (req, res) => {
   }
 };
 
-const redirectToContent = async (req, res) => {
+const redirectQRCode = async (req, res) => {
   try {
     const qrCode = await QRCode.findOne({ shortCode: req.params.shortCode });
 
@@ -98,10 +98,6 @@ const redirectToContent = async (req, res) => {
 
     if (qrCode.isPaused) {
       return res.status(403).json({ message: "QR Code is currently paused" });
-    }
-
-    if (qrCode.expiresAt && new Date() > new Date(qrCode.expiresAt)) {
-      return res.status(410).json({ message: "QR Code has expired" });
     }
 
     const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
@@ -129,8 +125,72 @@ const redirectToContent = async (req, res) => {
     qrCode.scanCount += 1;
     await qrCode.save();
 
-    // Return URL instead of redirect
-    res.status(200).json({ url: qrCode.content });
+    let redirectUrl = null;
+
+    switch (qrCode.type) {
+      case "URL":
+        redirectUrl = qrCode.typeData.url;
+        break;
+
+      case "EMAIL":
+        const { email, emailSubject, emailBody } = qrCode.typeData || {};
+        const encodedEmailSubject = encodeURIComponent(emailSubject || "");
+        const encodedEmailBody = encodeURIComponent(emailBody || "");
+        redirectUrl = `mailto:${email}?subject=${encodedEmailSubject}&body=${encodedEmailBody}`;
+        break;
+
+      case "SMS":
+        const { smsNumber, smsBody } = qrCode.typeData || {};
+        const encodedSmsBody = encodeURIComponent(smsBody || "");
+        redirectUrl = `sms:${smsNumber}?body=${encodedSmsBody}`;
+        break;
+
+      case "PHONE":
+        const { phoneNumber } = qrCode.typeData || {};
+        const cleanPhoneNumber = (phoneNumber || "").replace(/[\s\-()]/g, "");
+        redirectUrl = `tel:${cleanPhoneNumber}`;
+        break;
+
+      case "WHATSAPP":
+        const { whatsappNumber, whatsappMessage } = qrCode.typeData || {};
+        const cleanWhatsappNumber = (whatsappNumber || "").replace(/[\s\-()]/g, "");
+        const encodedWhatsappMessage = encodeURIComponent(whatsappMessage || "");
+        redirectUrl = `https://wa.me/${cleanWhatsappNumber}?text=${encodedWhatsappMessage}`;
+        break;
+
+      case "LOCATION":
+        const { latitude, longitude, query } = qrCode.typeData || {};
+        if (latitude && longitude) {
+          redirectUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        } else if (query) {
+          redirectUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+        } else {
+          redirectUrl = "/";
+        }
+        break;
+
+      case "UPI":
+        const { upiId, payeeName, amount, note } = qrCode.typeData || {};
+        let upiUrl = `upi://pay?pa=${encodeURIComponent(upiId || "")}`;
+
+        if (payeeName) upiUrl += `&pn=${encodeURIComponent(payeeName)}`;
+        if (amount) upiUrl += `&am=${encodeURIComponent(amount)}`;
+        if (note) upiUrl += `&tn=${encodeURIComponent(note)}`;
+
+        upiUrl += `&cu=INR`; // currency is mandatory for most apps
+
+        redirectUrl = upiUrl;
+        break;
+
+      case "YOUTUBE":
+        redirectUrl = qrCode.typeData.youtubeLink;
+        break;
+
+      default:
+        redirectUrl = "/";
+    }
+
+    res.status(200).json({ url: redirectUrl });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -212,7 +272,7 @@ const togglePauseQRCode = async (req, res) => {
 const getQRCodeAnalytics = async (req, res) => {
   try {
     const qrCodeId = req.params.id;
-    
+
     // Verify ownership
     const qrCode = await QRCode.findById(qrCodeId);
     if (!qrCode || qrCode.userId.toString() !== req.user.userId) {
@@ -226,7 +286,7 @@ const getQRCodeAnalytics = async (req, res) => {
     const scansOverTime = {};
     const last30Days = {};
     const today = new Date();
-    
+
     // Initialize last 30 days
     for (let i = 29; i >= 0; i--) {
       const date = new Date(today);
@@ -270,7 +330,7 @@ const getQRCodeAnalytics = async (req, res) => {
     scans.forEach(scan => {
       const country = scan.location?.country || 'Unknown';
       const city = scan.location?.city || 'Unknown';
-      
+
       countries[country] = (countries[country] || 0) + 1;
       cities[city] = (cities[city] || 0) + 1;
     });
@@ -280,7 +340,7 @@ const getQRCodeAnalytics = async (req, res) => {
     for (let i = 0; i < 24; i++) {
       hourlyDistribution[i] = 0;
     }
-    
+
     scans.forEach(scan => {
       const hour = new Date(scan.scannedAt).getHours();
       hourlyDistribution[hour]++;
@@ -342,7 +402,7 @@ const getQRCodeAnalytics = async (req, res) => {
       return diffDays > 30 && diffDays <= 60;
     }).length;
 
-    const growthRate = previousPeriodScans > 0 
+    const growthRate = previousPeriodScans > 0
       ? ((last30Days - previousPeriodScans) / previousPeriodScans * 100).toFixed(1)
       : 0;
 
@@ -388,7 +448,7 @@ const getQRCodeAnalytics = async (req, res) => {
 const getQRCodeRealTimeAnalytics = async (req, res) => {
   try {
     const qrCodeId = req.params.id;
-    
+
     // Verify ownership
     const qrCode = await QRCode.findById(qrCodeId);
     if (!qrCode || qrCode.userId.toString() !== req.user.userId) {
@@ -466,7 +526,7 @@ module.exports = {
   getUserQRCodes,
   getQRCodeById,
   deleteQRCode,
-  redirectToContent,
+  redirectQRCode,
   togglePauseQRCode,
   getQRCodeAnalytics,
   getQRCodeRealTimeAnalytics,
