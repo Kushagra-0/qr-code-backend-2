@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const QRCode = require('../models/QRCode');
 const Scan = require('../models/Scan');
 
@@ -18,9 +19,28 @@ const generateUniqueShortCode = async () => {
   return shortCode;
 };
 
+const cleanBackgroundStage = {
+  $addFields: {
+    backgroundOptions: {
+      $cond: [
+        {
+          $and: [
+            { $ifNull: ["$backgroundOptions.gradient", false] },
+            { $eq: [{ $size: { $ifNull: ["$backgroundOptions.gradient.colorStops", []] } }, 0] }
+          ]
+        },
+        // if gradient exists but has no colorStops → drop it
+        { color: "$backgroundOptions.color" },
+        // else keep as-is
+        "$backgroundOptions"
+      ]
+    }
+  }
+}
+
 // Create a QR Code
 const createQRCode = async (req, res) => {
-  const { name, type, typeData, backgroundColor, dotType, dotColor, cornersSquareType, cornersSquareColor, cornersDotType, cornersDotColor, isDynamic } = req.body;
+  const { name, type, typeData, backgroundOptions, backgroundColor, dotType, dotColor, cornersSquareType, cornersSquareColor, cornersDotType, cornersDotColor, isDynamic } = req.body;
   const userId = req.user.userId;
 
   if (!type) {
@@ -36,6 +56,7 @@ const createQRCode = async (req, res) => {
       name,
       type,
       typeData,
+      backgroundOptions,
       backgroundColor,
       dotType,
       dotColor,
@@ -64,10 +85,11 @@ const updateQRCode = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    const { name, type, typeData, backgroundColor, dotType, dotColor, cornersSquareType, cornersSquareColor, cornersDotType, cornersDotColor, expiresAt } = req.body;
+    const { name, type, typeData, backgroundOptions, backgroundColor, dotType, dotColor, cornersSquareType, cornersSquareColor, cornersDotType, cornersDotColor, expiresAt } = req.body;
 
     if (name !== undefined) qrCode.name = name;
     if (typeData !== undefined) qrCode.typeData = typeData;
+    if (backgroundOptions !== undefined) qrCode.backgroundOptions = backgroundOptions;
     if (backgroundColor !== undefined) qrCode.backgroundColor = backgroundColor;
     if (dotType !== undefined) qrCode.dotType = dotType;
     if (dotColor !== undefined) qrCode.dotColor = dotColor;
@@ -202,7 +224,12 @@ const getUserQRCodes = async (req, res) => {
   const userId = req.user.userId;
 
   try {
-    const qrCodes = await QRCode.find({ userId }).sort({ createdAt: -1 });
+    // const qrCodes = await QRCode.find({ userId }).sort({ createdAt: -1 });
+    const qrCodes = await QRCode.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+      cleanBackgroundStage,
+      { $sort: { createdAt: -1 } }
+    ]);
     res.status(200).json(qrCodes);
   } catch (err) {
     console.error(err);
@@ -233,7 +260,10 @@ const deleteQRCode = async (req, res) => {
 
 const getQRCodeById = async (req, res) => {
   try {
-    const qrCode = await QRCode.findById(req.params.id);
+    const [qrCode] = await QRCode.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
+      cleanBackgroundStage
+    ]);
 
     if (!qrCode) {
       return res.status(404).json({ message: 'QR Code not found' });

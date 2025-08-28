@@ -1,5 +1,22 @@
 const mongoose = require('mongoose');
 
+const colorStopSchema = new mongoose.Schema(
+    {
+        offset: {
+            type: Number,
+            min: 0,
+            max: 1,
+            required: true,
+        },
+        color: {
+            type: String,
+            required: true,
+        },
+    },
+    { _id: false }
+);
+
+
 const qrCodeSchema = new mongoose.Schema(
     {
         userId: {
@@ -9,7 +26,7 @@ const qrCodeSchema = new mongoose.Schema(
         },
         shortCode: {
             type: String,
-            requied: true,
+            required: true,
             unique: true,
         },
         name: {
@@ -18,7 +35,7 @@ const qrCodeSchema = new mongoose.Schema(
 
         type: {
             type: String,
-            enum: ['URL', 'EMAIL', 'SMS', 'PHONE', 'YOUTUBE', 'WHATSAPP' , 'INSTAGRAM', 'FACEBOOK', 'TELEGRAM', 'LINKEDIN', 'TWITTER',  'YOUTUBE', 'LOCATION', 'UPI'],
+            enum: ['URL', 'EMAIL', 'SMS', 'PHONE', 'YOUTUBE', 'WHATSAPP', 'INSTAGRAM', 'FACEBOOK', 'TELEGRAM', 'LINKEDIN', 'TWITTER', 'YOUTUBE', 'LOCATION', 'UPI'],
             required: true,
         },
 
@@ -28,9 +45,29 @@ const qrCodeSchema = new mongoose.Schema(
         },
 
         //styling
-        backgroundColor: {
-            type: String,
-            default: '#ffffff',
+        backgroundOptions: {
+            color: {
+                type: String,
+                default: '#ffffff',
+            },
+            gradient: {
+                type: {
+                    type: String,
+                    enum: ['linear', 'radial'],
+                    default: 'linear',
+                },
+                rotation: {
+                    type: Number,
+                    default: 0,
+                },
+                colorStops: {
+                    type: [colorStopSchema],
+                    // validate: {
+                    //     validator: (v) => !v || v.length >= 2,
+                    //     message: 'Gradient must have at least two color stops',
+                    // },
+                }
+            }
         },
         dotType: {
             type: String,
