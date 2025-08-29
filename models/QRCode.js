@@ -62,31 +62,88 @@ const qrCodeSchema = new mongoose.Schema(
                 },
                 colorStops: {
                     type: [colorStopSchema],
-                    // validate: {
-                    //     validator: (v) => !v || v.length >= 2,
-                    //     message: 'Gradient must have at least two color stops',
-                    // },
                 }
             }
         },
-        dotType: {
-            type: String,
-            enum: ['square', 'dots', 'rounded', 'classy', 'classy-rounded', 'extra-rounded'],
-            default: 'square',
+
+        dotsOptions: {
+            color: {
+                type: String,
+                default: "#000000",
+            },
+            gradient: {
+                type: {
+                    type: String,
+                    enum: ['linear', 'radial'],
+                    default: 'linear',
+                },
+                rotation: {
+                    type: Number,
+                    default: 0,
+                },
+                colorStops: {
+                    type: [colorStopSchema],
+                },
+            },
+            type: {
+                type: String,
+                enum: ['square', 'dots', 'rounded', 'classy', 'classy-rounded', 'extra-rounded'],
+                default: 'square',
+            }
         },
-        dotColor: {
-            type: String,
-            default: '#000000',
+
+        cornersSquareOptions: {
+            color: {
+                type: String,
+                default: "#000000",
+            },
+            gradient: {
+                type: {
+                    type: String,
+                    enum: ['linear', 'radial'],
+                    default: 'linear',
+                },
+                rotation: {
+                    type: Number,
+                    default: 0,
+                },
+                colorStops: {
+                    type: [colorStopSchema],
+                },
+            },
+            type: {
+                type: String,
+                enum: ['square', 'dots', 'rounded', 'classy', 'classy-rounded', 'extra-rounded'],
+                default: 'square',
+            }
         },
-        cornersSquareType: {
-            type: String,
-            enum: ['square', 'dots', 'rounded', 'classy', 'classy-rounded', 'extra-rounded'],
-            default: 'square',
+
+        cornersDotOptions: {
+            color: {
+                type: String,
+                default: "#000000",
+            },
+            gradient: {
+                type: {
+                    type: String,
+                    enum: ['linear', 'radial'],
+                    default: 'linear',
+                },
+                rotation: {
+                    type: Number,
+                    default: 0,
+                },
+                colorStops: {
+                    type: [colorStopSchema],
+                },
+            },
+            type: {
+                type: String,
+                enum: ['square', 'dots', 'rounded', 'classy', 'classy-rounded', 'extra-rounded'],
+                default: 'square',
+            }
         },
-        cornersSquareColor: {
-            type: String,
-            default: '#000000',
-        },
+
         cornersDotType: {
             type: String,
             enum: ['square', 'dots', 'rounded', 'classy', 'classy-rounded', 'extra-rounded'],
