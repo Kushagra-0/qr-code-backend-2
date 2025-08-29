@@ -38,9 +38,66 @@ const cleanBackgroundStage = {
   }
 }
 
+const cleanDotsStage = {
+  $addFields: {
+    dotsOptions: {
+      $cond: [
+        {
+          $and: [
+            { $ifNull: ["$dotsOptions.gradient", false] },
+            { $eq: [{ $size: { $ifNull: ["$dotsOptions.gradient.colorStops", []] } }, 0] }
+          ]
+        },
+        // if gradient exists but has no colorStops → use plain color
+        { type: "$dotsOptions.type", color: "$dotsOptions.color" },
+        // else keep as-is
+        "$dotsOptions"
+      ]
+    }
+  }
+};
+
+const cleanCornersSquareStage = {
+  $addFields: {
+    cornersSquareOptions: {
+      $cond: [
+        {
+          $and: [
+            { $ifNull: ["$cornersSquareOptions.gradient", false] },
+            { $eq: [{ $size: { $ifNull: ["$cornersSquareOptions.gradient.colorStops", []] } }, 0] }
+          ]
+        },
+        // if gradient exists but has no colorStops → use plain color
+        { type: "$cornersSquareOptions.type", color: "$cornersSquareOptions.color" },
+        // else keep as-is
+        "$cornersSquareOptions"
+      ]
+    }
+  }
+};
+
+const cleanCornersDotStage = {
+  $addFields: {
+    cornersDotOptions: {
+      $cond: [
+        {
+          $and: [
+            { $ifNull: ["$cornersDotOptions.gradient", false] },
+            { $eq: [{ $size: { $ifNull: ["$cornersDotOptions.gradient.colorStops", []] } }, 0] }
+          ]
+        },
+        // if gradient exists but has no colorStops → use plain color
+        { type: "$cornersDotOptions.type", color: "$cornersDotOptions.color" },
+        // else keep as-is
+        "$cornersDotOptions"
+      ]
+    }
+  }
+};
+
 // Create a QR Code
 const createQRCode = async (req, res) => {
-  const { name, type, typeData, backgroundOptions, backgroundColor, dotType, dotColor, cornersSquareType, cornersSquareColor, cornersDotType, cornersDotColor, isDynamic } = req.body;
+  const { name, type, typeData, backgroundOptions, dotsOptions, cornersSquareOptions, cornersDotOptions, cornersDotType, cornersDotColor, isDynamic } = req.body;
   const userId = req.user.userId;
 
   if (!type) {
@@ -57,11 +114,9 @@ const createQRCode = async (req, res) => {
       type,
       typeData,
       backgroundOptions,
-      backgroundColor,
-      dotType,
-      dotColor,
-      cornersSquareType,
-      cornersSquareColor,
+      dotsOptions,
+      cornersSquareOptions,
+      cornersDotOptions,
       cornersDotType,
       cornersDotColor,
       isDynamic,
@@ -85,16 +140,14 @@ const updateQRCode = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    const { name, type, typeData, backgroundOptions, backgroundColor, dotType, dotColor, cornersSquareType, cornersSquareColor, cornersDotType, cornersDotColor, expiresAt } = req.body;
+    const { name, type, typeData, backgroundOptions, dotsOptions, cornersSquareOptions, cornersDotOptions, cornersDotType, cornersDotColor, expiresAt } = req.body;
 
     if (name !== undefined) qrCode.name = name;
     if (typeData !== undefined) qrCode.typeData = typeData;
     if (backgroundOptions !== undefined) qrCode.backgroundOptions = backgroundOptions;
-    if (backgroundColor !== undefined) qrCode.backgroundColor = backgroundColor;
-    if (dotType !== undefined) qrCode.dotType = dotType;
-    if (dotColor !== undefined) qrCode.dotColor = dotColor;
-    if (cornersSquareType !== undefined) qrCode.cornersSquareType = cornersSquareType;
-    if (cornersSquareColor !== undefined) qrCode.cornersSquareColor = cornersSquareColor;
+    if (dotsOptions !== undefined) qrCode.dotsOptions = dotsOptions;
+    if (cornersSquareOptions !== undefined) qrCode.cornersSquareOptions = cornersSquareOptions;
+    if (cornersDotOptions !== undefined) qrCode.cornersDotOptions = cornersDotOptions;
     if (cornersDotType !== undefined) qrCode.cornersDotType = cornersDotType;
     if (cornersDotColor !== undefined) qrCode.cornersDotColor = cornersDotColor;
     if (expiresAt !== undefined) qrCode.expiresAt = expiresAt ? new Date(expiresAt) : null;
@@ -228,6 +281,9 @@ const getUserQRCodes = async (req, res) => {
     const qrCodes = await QRCode.aggregate([
       { $match: { userId: new mongoose.Types.ObjectId(userId) } },
       cleanBackgroundStage,
+      cleanDotsStage,
+      cleanCornersSquareStage,
+      cleanCornersDotStage,
       { $sort: { createdAt: -1 } }
     ]);
     res.status(200).json(qrCodes);
@@ -262,7 +318,10 @@ const getQRCodeById = async (req, res) => {
   try {
     const [qrCode] = await QRCode.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
-      cleanBackgroundStage
+      cleanBackgroundStage,
+      cleanDotsStage,
+      cleanCornersSquareStage,
+      cleanCornersDotStage,
     ]);
 
     if (!qrCode) {
