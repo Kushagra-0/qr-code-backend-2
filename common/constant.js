@@ -1,0 +1,1 @@
+export default frontendUrl = "http://localhost:5173"

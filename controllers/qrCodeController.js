@@ -97,7 +97,7 @@ const cleanCornersDotStage = {
 
 // Create a QR Code
 const createQRCode = async (req, res) => {
-  const { name, type, typeData, backgroundOptions, dotsOptions, cornersSquareOptions, cornersDotOptions, cornersDotType, cornersDotColor, isDynamic } = req.body;
+  const { name, type, typeData, image, backgroundOptions, dotsOptions, cornersSquareOptions, cornersDotOptions, cornersDotType, cornersDotColor, isDynamic } = req.body;
   const userId = req.user.userId;
 
   if (!type) {
@@ -113,6 +113,7 @@ const createQRCode = async (req, res) => {
       name,
       type,
       typeData,
+      image,
       backgroundOptions,
       dotsOptions,
       cornersSquareOptions,
@@ -140,10 +141,11 @@ const updateQRCode = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    const { name, type, typeData, backgroundOptions, dotsOptions, cornersSquareOptions, cornersDotOptions, cornersDotType, cornersDotColor, expiresAt } = req.body;
+    const { name, type, typeData, image, backgroundOptions, dotsOptions, cornersSquareOptions, cornersDotOptions, cornersDotType, cornersDotColor, expiresAt } = req.body;
 
     if (name !== undefined) qrCode.name = name;
     if (typeData !== undefined) qrCode.typeData = typeData;
+    if (image !== undefined) qrCode.image = image;
     if (backgroundOptions !== undefined) qrCode.backgroundOptions = backgroundOptions;
     if (dotsOptions !== undefined) qrCode.dotsOptions = dotsOptions;
     if (cornersSquareOptions !== undefined) qrCode.cornersSquareOptions = cornersSquareOptions;
@@ -207,11 +209,23 @@ const redirectQRCode = async (req, res) => {
         redirectUrl = qrCode.typeData.url;
         break;
 
+      case "IMAGE":
+        redirectUrl = `${process.env.FRONTEND_URL}/page/${qrCode.shortCode}`;
+        break;
+
       case "EMAIL":
         const { email, emailSubject, emailBody } = qrCode.typeData || {};
         const encodedEmailSubject = encodeURIComponent(emailSubject || "");
         const encodedEmailBody = encodeURIComponent(emailBody || "");
         redirectUrl = `mailto:${email}?subject=${encodedEmailSubject}&body=${encodedEmailBody}`;
+        break;
+
+      case "PDF":
+        redirectUrl = `${process.env.FRONTEND_URL}/page/${qrCode.shortCode}`;
+        break;
+
+      case "TEXT":
+        redirectUrl = `${process.env.FRONTEND_URL}/page/${qrCode.shortCode}`;
         break;
 
       case "SMS":
@@ -224,6 +238,11 @@ const redirectQRCode = async (req, res) => {
         const { phoneNumber } = qrCode.typeData || {};
         const cleanPhoneNumber = (phoneNumber || "").replace(/[\s\-()]/g, "");
         redirectUrl = `tel:${cleanPhoneNumber}`;
+        break;
+
+
+      case "AUDIO":
+        redirectUrl = `${process.env.FRONTEND_URL}/page/${qrCode.shortCode}`;
         break;
 
       case "WHATSAPP":
@@ -243,6 +262,7 @@ const redirectQRCode = async (req, res) => {
           redirectUrl = "/";
         }
         break;
+
 
       case "UPI":
         const { upiId, payeeName, amount, note } = qrCode.typeData || {};
@@ -336,6 +356,26 @@ const getQRCodeById = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const getQRCodePublic = async (req, res) => {
+  try {
+    const { shortCode } = req.params;
+    const qrCode = await QRCode.findOne({ shortCode });
+
+    if (!qrCode) {
+      return res.status(404).json({ message: "QR Code not found" });
+    }
+
+    // Only return safe public data
+    res.status(200).json({
+      type: qrCode.type,
+      typeData: qrCode.typeData,
+    });
+  } catch (err) {
+    console.error("Public QR fetch error:", err);
+    res.status(500).json({ message: "Failed to fetch QR Code" });
   }
 };
 
@@ -614,6 +654,7 @@ module.exports = {
   updateQRCode,
   getUserQRCodes,
   getQRCodeById,
+  getQRCodePublic,
   deleteQRCode,
   redirectQRCode,
   togglePauseQRCode,

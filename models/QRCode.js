@@ -35,7 +35,7 @@ const qrCodeSchema = new mongoose.Schema(
 
         type: {
             type: String,
-            enum: ['URL', 'EMAIL', 'SMS', 'PHONE', 'YOUTUBE', 'WHATSAPP', 'INSTAGRAM', 'FACEBOOK', 'TELEGRAM', 'LINKEDIN', 'TWITTER', 'YOUTUBE', 'LOCATION', 'UPI'],
+            enum: ['URL', 'IMAGE', 'EMAIL', 'PDF', 'TEXT', 'SMS', 'PHONE',  'AUDIO', 'YOUTUBE', 'WHATSAPP', 'INSTAGRAM', 'FACEBOOK', 'TELEGRAM', 'LINKEDIN', 'TWITTER', 'YOUTUBE', 'LOCATION', 'UPI'],
             required: true,
         },
 
@@ -45,6 +45,11 @@ const qrCodeSchema = new mongoose.Schema(
         },
 
         //styling
+        image: {
+            type: String,
+            default: null,
+        },
+
         backgroundOptions: {
             color: {
                 type: String,

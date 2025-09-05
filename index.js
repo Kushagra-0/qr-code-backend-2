@@ -6,6 +6,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const qrCodeRoutes = require('./routes/qrCodeRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 const cors = require('cors');
 
 app.use(express.json());
@@ -20,6 +21,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/qrcodes', qrCodeRoutes);
+app.use('/api/upload', uploadRoutes); 
 
 app.listen(port, () => {
   console.log(`App listening at http://localhost:${port}`);
