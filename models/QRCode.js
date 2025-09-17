@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose"
 
 const colorStopSchema = new mongoose.Schema(
     {
@@ -179,4 +179,4 @@ const qrCodeSchema = new mongoose.Schema(
 )
 
 const QRCode = mongoose.model('QRCode', qrCodeSchema);
-module.exports = QRCode;
+export default QRCode;

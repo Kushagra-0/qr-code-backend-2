@@ -1,6 +1,6 @@
-const Blog = require("../models/Blog");
+import Blog from "../models/Blog";
 
-const createBlog = async (req, res) => {
+export const createBlog = async (req, res) => {
   try {
     const { title, slug, description, content } = req.body;
 
@@ -20,7 +20,7 @@ const createBlog = async (req, res) => {
 };
 
 // Get All Blogs
-const getBlogs = async (req, res) => {
+export const getBlogs = async (req, res) => {
   try {
     const blogs = await Blog.find().sort({ createdAt: -1 });
     res.json(blogs);
@@ -30,7 +30,7 @@ const getBlogs = async (req, res) => {
 };
 
 // Get Blog by Slug
-const getBlogBySlug = async (req, res) => {
+export const getBlogBySlug = async (req, res) => {
   try {
     const blog = await Blog.findOne({ slug: req.params.slug });
     if (!blog) return res.status(404).json({ error: "Not found" });
@@ -41,7 +41,7 @@ const getBlogBySlug = async (req, res) => {
 };
 
 // Delete Blog by Slug
-const deleteBlog = async (req, res) => {
+export const deleteBlog = async (req, res) => {
   try {
     const deleted = await Blog.deleteOne({ slug: req.params.slug });
     if (deleted.deletedCount === 0)
@@ -52,7 +52,7 @@ const deleteBlog = async (req, res) => {
   }
 };
 
-const updateBlog = async (req, res) => {
+export const updateBlog = async (req, res) => {
   try {
     const { title, description, content } = req.body;
 
@@ -72,11 +72,3 @@ const updateBlog = async (req, res) => {
     res.status(500).json({ error: "Failed to update blog" });
   }
 };
-
-module.exports = {
-    createBlog,
-    getBlogs,
-    getBlogBySlug,
-    deleteBlog,
-    updateBlog,
-}

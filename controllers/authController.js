@@ -1,14 +1,14 @@
-const User = require('../models/User');
-const OTP = require('../models/Otp');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const sendEmail = require('../utils/sendEmail');
+import User from "../models/User.js";
+import OTP from "../models/Otp.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import sendEmail from "../utils/sendEmail.js";
 
 const generateOtp = () => {
   return Math.floor(10000 + Math.random() * 90000).toString();
 };
 
-const sendOtp = async (userId, email) => {
+export const sendOtp = async (userId, email) => {
   const otp = generateOtp();
   const otpExpiresAt = Date.now() + 10 * 60 * 1000;
 
@@ -30,7 +30,7 @@ const sendOtp = async (userId, email) => {
   return otp;
 };
 
-const verifyEmailVerificationOtp = async (req, res) => {
+export const verifyEmailVerificationOtp = async (req, res) => {
   const { userId, otp } = req.body;
 
   if(!userId || !otp) {
@@ -58,7 +58,7 @@ const verifyEmailVerificationOtp = async (req, res) => {
   res.status(200).json({ message: 'OTP verified successfully' });
 };
 
-const requestForgotPassword = async (req, res) => {
+export const requestForgotPassword = async (req, res) => {
   const { email } = req.body;
 
   try {
@@ -97,7 +97,7 @@ const requestForgotPassword = async (req, res) => {
   }
 };
 
-const verifyForgotPasswordOtp = async (req, res) => {
+export const verifyForgotPasswordOtp = async (req, res) => {
   const { userId, otp } = req.body;
 
   const otpEntry = await OTP.findOne({
@@ -125,7 +125,7 @@ const verifyForgotPasswordOtp = async (req, res) => {
   res.status(200).json({ message: 'OTP verified, you may now reset your password', resetToken });
 };
 
-const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res) => {
   const { newPassword } = req.body;
   const authHeader = req.headers.authorization;
 
@@ -156,7 +156,7 @@ const resetPassword = async (req, res) => {
   }
 };
 
-const register = async (req, res) => {
+export const register = async (req, res) => {
   try {
     const { email, password, role } = req.body;
 
@@ -192,7 +192,7 @@ const register = async (req, res) => {
   }
 };
 
-const login = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -228,7 +228,7 @@ const login = async (req, res) => {
   }
 }
 
-const resendEmailVerificationOtp = async (req, res) => {
+export const resendEmailVerificationOtp = async (req, res) => {
   const { userId } = req.body;
 
   if (!userId) {
@@ -258,14 +258,4 @@ const resendEmailVerificationOtp = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
-};
-
-module.exports = {
-  register,
-  login,
-  requestForgotPassword,
-  verifyEmailVerificationOtp,
-  verifyForgotPasswordOtp,
-  resetPassword,
-  resendEmailVerificationOtp,
 };

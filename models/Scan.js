@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose"
 
 const scanSchema = new mongoose.Schema(
     {
@@ -38,4 +38,4 @@ const scanSchema = new mongoose.Schema(
 );
 
 const Scan = mongoose.model("Scan", scanSchema);
-module.exports = Scan;
+export default Scan;

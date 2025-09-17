@@ -1,6 +1,5 @@
-const express = require('express');
-const router = express.Router();
-const {
+import express from 'express';
+import {
   createQRCode,
   getUserQRCodes,
   deleteQRCode,
@@ -12,8 +11,10 @@ const {
   getUserScanAnalytics,
   redirectQRCode,
   getQRCodePublic
-} = require('../controllers/qrCodeController');
-const authMiddleware = require('../middleware/authMiddleware');
+} from '../controllers/qrCodeController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
+
+const router = express.Router();
 
 // Routes
 router.post('/create', authMiddleware, createQRCode);
@@ -28,4 +29,4 @@ router.get('/analytics/:id', authMiddleware, getQRCodeAnalytics);
 router.get('/realtime-analytics/:id', authMiddleware, getQRCodeRealTimeAnalytics);
 router.get('/user/analytics', authMiddleware, getUserScanAnalytics);
 
-module.exports = router;
+export default router;

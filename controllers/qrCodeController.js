@@ -1,10 +1,10 @@
-const mongoose = require("mongoose");
-const QRCode = require('../models/QRCode');
-const Scan = require('../models/Scan');
+import mongoose from "mongoose"
+import QRCode from "../models/QRCode"
+import Scan from "../models/Scan"
 
-const geoip = require("geoip-lite");
-const UAParser = require("ua-parser-js");
-const { nanoid } = require("nanoid");
+import geoip from "geoip-lite";
+import UAParser from "ua-parser-js";
+import { nanoid } from "nanoid";
 
 const generateUniqueShortCode = async () => {
   let shortCode;
@@ -96,7 +96,7 @@ const cleanCornersDotStage = {
 };
 
 // Create a QR Code
-const createQRCode = async (req, res) => {
+export const createQRCode = async (req, res) => {
   const { name, type, typeData, image, backgroundOptions, dotsOptions, cornersSquareOptions, cornersDotOptions, cornersDotType, cornersDotColor, isDynamic } = req.body;
   const userId = req.user.userId;
 
@@ -129,7 +129,7 @@ const createQRCode = async (req, res) => {
   }
 };
 
-const updateQRCode = async (req, res) => {
+export const updateQRCode = async (req, res) => {
   try {
     const qrCode = await QRCode.findById(req.params.id);
     if (!qrCode) {
@@ -163,7 +163,7 @@ const updateQRCode = async (req, res) => {
   }
 };
 
-const redirectQRCode = async (req, res) => {
+export const redirectQRCode = async (req, res) => {
   try {
     const qrCode = await QRCode.findOne({ shortCode: req.params.shortCode });
 
@@ -293,7 +293,7 @@ const redirectQRCode = async (req, res) => {
 };
 
 // Get all QR Codes by User
-const getUserQRCodes = async (req, res) => {
+export const getUserQRCodes = async (req, res) => {
   const userId = req.user.userId;
 
   try {
@@ -313,7 +313,7 @@ const getUserQRCodes = async (req, res) => {
   }
 };
 
-const deleteQRCode = async (req, res) => {
+export const deleteQRCode = async (req, res) => {
   try {
     const qrCode = await QRCode.findById(req.params.id);
 
@@ -334,7 +334,7 @@ const deleteQRCode = async (req, res) => {
   }
 };
 
-const getQRCodeById = async (req, res) => {
+export const getQRCodeById = async (req, res) => {
   try {
     const [qrCode] = await QRCode.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
@@ -359,7 +359,7 @@ const getQRCodeById = async (req, res) => {
   }
 };
 
-const getQRCodePublic = async (req, res) => {
+export const getQRCodePublic = async (req, res) => {
   try {
     const { shortCode } = req.params;
     const qrCode = await QRCode.findOne({ shortCode });
@@ -379,7 +379,7 @@ const getQRCodePublic = async (req, res) => {
   }
 };
 
-const togglePauseQRCode = async (req, res) => {
+export const togglePauseQRCode = async (req, res) => {
   try {
     const qrCode = await QRCode.findById(req.params.id);
     if (!qrCode) return res.status(404).json({ message: "QR Code not found" });
@@ -398,7 +398,7 @@ const togglePauseQRCode = async (req, res) => {
   }
 };
 
-const getQRCodeAnalytics = async (req, res) => {
+export const getQRCodeAnalytics = async (req, res) => {
   try {
     const qrCodeId = req.params.id;
 
@@ -574,7 +574,7 @@ const getQRCodeAnalytics = async (req, res) => {
   }
 };
 
-const getQRCodeRealTimeAnalytics = async (req, res) => {
+export const getQRCodeRealTimeAnalytics = async (req, res) => {
   try {
     const qrCodeId = req.params.id;
 
@@ -609,7 +609,7 @@ const getQRCodeRealTimeAnalytics = async (req, res) => {
   }
 };
 
-const getUserScanAnalytics = async (req, res) => {
+export const getUserScanAnalytics = async (req, res) => {
   try {
     const userId = req.user.userId;
 
@@ -646,19 +646,4 @@ const getUserScanAnalytics = async (req, res) => {
     console.error(err);
     res.status(500).json({ message: 'Error fetching user scan analytics' });
   }
-};
-
-
-module.exports = {
-  createQRCode,
-  updateQRCode,
-  getUserQRCodes,
-  getQRCodeById,
-  getQRCodePublic,
-  deleteQRCode,
-  redirectQRCode,
-  togglePauseQRCode,
-  getQRCodeAnalytics,
-  getQRCodeRealTimeAnalytics,
-  getUserScanAnalytics,
 };

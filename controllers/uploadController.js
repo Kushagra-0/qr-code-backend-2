@@ -1,4 +1,4 @@
-const cloudinary = require("cloudinary").v2;
+import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -6,7 +6,7 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadImageLogo = async (req, res) => {
+export const uploadImageLogo = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: "No file uploaded" });
@@ -24,7 +24,7 @@ const uploadImageLogo = async (req, res) => {
     }
 };
 
-const uploadImage = async (req, res) => {
+export const uploadImage = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: "No file uploaded" });
@@ -42,7 +42,7 @@ const uploadImage = async (req, res) => {
     }
 };
 
-const uploadPdf = async (req, res) => {
+export const uploadPdf = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: "No file uploaded" });
@@ -64,7 +64,7 @@ const uploadPdf = async (req, res) => {
     }
 };
 
-const uploadAudio = async (req, res) => {
+export const uploadAudio = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
@@ -82,6 +82,3 @@ const uploadAudio = async (req, res) => {
     res.status(500).json({ message: "Audio upload failed" });
   }
 };
-
-
-module.exports = { uploadImageLogo, uploadImage, uploadPdf, uploadAudio };

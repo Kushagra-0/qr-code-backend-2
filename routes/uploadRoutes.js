@@ -1,7 +1,7 @@
-const express = require("express");
-const multer = require("multer");
-const { uploadImage, uploadPdf, uploadAudio, uploadImageLogo } = require("../controllers/uploadController");
-const authMiddleware = require("../middleware/authMiddleware");
+import express from "express";
+import multer from "multer";
+import { uploadImage, uploadPdf, uploadAudio, uploadImageLogo } from "../controllers/uploadController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -14,4 +14,4 @@ router.post("/image", authMiddleware, upload.single("file"), uploadImage);
 router.post("/pdf", authMiddleware, upload.single("file"), uploadPdf);
 router.post("/audio", authMiddleware, upload.single("file"), uploadAudio);
 
-module.exports = router;
+export default router;
