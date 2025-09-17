@@ -1,13 +1,16 @@
-const express = require('express');
+import express from 'express';
+import dotenv from 'dotenv';
+import connectDB from './config/db.js';
+import authRoutes from './routes/authRoutes.js';
+import blogRoutes from './routes/blogRoutes.js';
+import qrCodeRoutes from './routes/qrCodeRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
+import cors from 'cors';
+
+dotenv.config();
+
 const app = express();
 const port = 3010;
-require('dotenv').config();
-const connectDB = require('./config/db');
-const authRoutes = require('./routes/authRoutes');
-const blogRoutes = require('./routes/blogRoutes');
-const qrCodeRoutes = require('./routes/qrCodeRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
-const cors = require('cors');
 
 app.use(express.json());
 app.use(cors());
@@ -21,8 +24,8 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/qrcodes', qrCodeRoutes);
-app.use('/api/upload', uploadRoutes); 
+app.use('/api/upload', uploadRoutes);
 
-app.listen(port, "0.0.0.0", () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`App listening at http://localhost:${port}`);
 });
