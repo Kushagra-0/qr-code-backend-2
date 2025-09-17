@@ -1,0 +1,50 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source
+        uses: action/checkout@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build Docker Image
+        run: docker build -t kushagra00/qr-code-backend .
+      - name: Publish Image to Docker Hub
+        run: docker push kushagra00/qr-code-backend:latest
+
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - name: Pull Image from Docker Hub
+        run: docker pull kushagra00/qr-code-backend:latest
+      - name: Create .env file
+        run: |
+          cat > .env <<EOF
+          MONGO_URI=${{ secrets.MONGO_URI }}
+          MONGO_PASS=${{ secrets.MONGO_PASS }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          EMAIL_USER=${{ secrets.EMAIL_USER }}
+          EMAIL_PASS=${{ secrets.EMAIL_PASS }}
+          CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+          EOF
+          chmod 600 .env
+      - name: Run Docker Container
+        run: |
+          docker stop qr-code-backend-container || true
+          docker rm qr-code-backend-container || true
+          docker run -d -p 3010:3010 --name qr-code-backend-container --env-file .env \
+            kushagra00/qr-code-backend:latest
