@@ -3,7 +3,7 @@ import QRCode from "../models/QRCode.js"
 import Scan from "../models/Scan.js"
 
 import geoip from "geoip-lite";
-import UAParser from "ua-parser-js";
+import { UAParser } from "ua-parser-js";
 import { nanoid } from "nanoid";
 
 const generateUniqueShortCode = async () => {
