@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
-import QRCode from "../models/QRCode"
-import Scan from "../models/Scan"
+import QRCode from "../models/QRCode.js"
+import Scan from "../models/Scan.js"
 
 import geoip from "geoip-lite";
 import UAParser from "ua-parser-js";
