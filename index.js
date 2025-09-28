@@ -1,5 +1,7 @@
+import 'dotenv/config';
+// import dotenv from 'dotenv';
+// dotenv.config();
 import express from 'express';
-import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
@@ -7,7 +9,6 @@ import qrCodeRoutes from './routes/qrCodeRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import cors from 'cors';
 
-dotenv.config();
 
 const app = express();
 const port = 3010;
