@@ -2,13 +2,14 @@ import Blog from "../models/Blog.js";
 
 export const createBlog = async (req, res) => {
   try {
-    const { title, slug, description, content } = req.body;
+    const { title, slug, description, content, coverImageUrl } = req.body;
 
     const blog = new Blog({
       title,
       slug,
       description,
       content,
+      coverImageUrl,
     });
 
     await blog.save();
@@ -54,11 +55,11 @@ export const deleteBlog = async (req, res) => {
 
 export const updateBlog = async (req, res) => {
   try {
-    const { title, description, content } = req.body;
+    const { title, description, content, coverImageUrl   } = req.body;
 
     const updatedBlog = await Blog.findOneAndUpdate(
       { slug: req.params.slug },
-      { title, description, content },
+      { title, description, content, coverImageUrl },
       { new: true, runValidators: true }
     );
 
